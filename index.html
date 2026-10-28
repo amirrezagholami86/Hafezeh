@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="version" content="5.0.0">
+<title>بازی حافظه v5.0.0</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    font-family: Tahoma, sans-serif;
+    background: linear-gradient(135deg, #1e1b4b, #312e81, #4338ca);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    color: #fff;
+    overflow-x: hidden;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 440px;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  
+  .version-badge {
+    position: absolute;
+    top: -8px;
+    left: 0;
+    background: rgba(34,211,238,0.2);
+    border: 1px solid rgba(34,211,238,0.5);
+    color: #22d3ee;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  
+  h1 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+  
+  .stats {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+  
+  .stat {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .stat b { color: #22d3ee; font-size: 14px; }
+  
+  .board {
+    display: grid;
+    gap: 8px;
+    perspective: 1000px;
+  }
+  
+  .card {
+    aspect-ratio: 1;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px;
+  }
+  
+  .card.flipped {
+    transform: rotateY(180deg);
+  }
+  
+  .card.matched {
+    animation: matchPop 0.5s ease;
+  }
+  
+  @keyframes matchPop {
+    0% { transform: rotateY(180deg) scale(1); }
+    50% { transform: rotateY(180deg) scale(1.1); }
+    100% { transform: rotateY(180deg) scale(1); }
+  }
+  
+  .card.matched .card-back {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    box-shadow: 0 0 20px rgba(34,197,94,0.6);
+  }
+  
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  .card-back {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    font-size: 28px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: 0.3s;
+  }
+  
+  .card-back::after {
+    content: '❓';
+    opacity: 0.7;
+  }
+  
+  .card:hover .card-back {
+    transform: scale(1.02);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  
+  .card-front {
+    background: linear-gradient(135deg, #f0f9ff, #e0e7ff);
+    transform: rotateY(180deg);
+    font-size: 36px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 14px;
+    margin-top: 18px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    background: linear-gradient(135deg, #22d3ee, #06b6d4);
+    color: #0f172a;
+    box-shadow: 0 4px 16px rgba(34,211,238,0.4);
+    transition: 0.2s;
+  }
+  
+  .btn:active { transform: scale(0.97); }
+  
+  .win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  
+  .win-overlay.show { display: flex; }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .win-box {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    padding: 30px 24px;
+    border-radius: 24px;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  .win-box h2 { font-size: 24px; margin-bottom: 12px; }
+  .win-box p { font-size: 14px; margin-bottom: 8px; opacity: 0.85; }
+  .win-box b { color: #22d3ee; }
+  
+  .win-box .btn { margin-top: 20px; }
+
+  .level-info {
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+  }
+  
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    opacity: 0.5;
+    margin-top: 15px;
+    letter-spacing: 0.3px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="version-badge">v5.0.0</span>
+    <h1>🧠 بازی حافظه</h1>
+    <div class="level-info" id="levelInfo">سطح ۱ — ۴ جفت</div>
+    <div class="stats">
+      <div class="stat">حرکت <b id="moves">۰</b></div>
+      <div class="stat">جفت <b id="pairs">۰/۴</b></div>
+      <div class="stat">⏱ <b id="timer">۰</b></div>
+    </div>
+  </div>
+  
+  <div class="board" id="board"></div>
+  
+  <button class="btn" onclick="newGame()">🔄 بازی جدید</button>
+  
+  <div class="footer">نسخه ۵.۰.۰ — ساخته شده با ❤️</div>
+</div>
+
+<div class="win-overlay" id="winOverlay">
+  <div class="win-box">
+    <h2>🎉 برنده شدی!</h2>
+    <p>تعداد حرکت: <b id="finalMoves">۰</b></p>
+    <p>زمان: <b id="finalTime">۰</b> ثانیه</p>
+    <button class="btn" onclick="nextLevel()">سطح بعدی ➡️</button>
+  </div>
+</div>
+
+<script>
+// ===== اطلاعات نسخه =====
+const APP_VERSION = '5.0.0';
+const APP_BUILD = 500;
+console.log(`🧠 Memory Game v${APP_VERSION} (build ${APP_BUILD})`);
+console.log('📦 نسخه ۵.۰.۰ آماده است');
+
+// ===== تنظیمات سطح‌ها =====
+const LEVELS = [
+  { pairs: 4, cols: 4 },
+  { pairs: 6, cols: 4 },
+  { pairs: 8, cols: 4 },
+  { pairs: 10, cols: 5 },
+  { pairs: 12, cols: 4 },
+];
+
+const EMOJIS = ['🍎','🍌','🍇','🍓','🍊','🍋','🍉','🍒','🥝','🍍','🥭','🍑','🍐','🥥','🫐','🍈'];
+
+// ===== وضعیت بازی =====
+let currentLevel = 0;
+let cards = [];
+let flipped = [];
+let matched = 0;
+let moves = 0;
+let timerInterval = null;
+let seconds = 0;
+let lockBoard = false;
+
+// ===== عناصر DOM =====
+const boardEl = document.getElementById('board');
+const movesEl = document.getElementById('moves');
+const pairsEl = document.getElementById('pairs');
+const timerEl = document.getElementById('timer');
+const levelInfoEl = document.getElementById('levelInfo');
+const winOverlay = document.getElementById('winOverlay');
+const finalMovesEl = document.getElementById('finalMoves');
+const finalTimeEl = document.getElementById('finalTime');
+
+// ===== شروع بازی =====
+function newGame() {
+  clearInterval(timerInterval);
+  seconds = 0;
+  moves = 0;
+  matched = 0;
+  flipped = [];
+  lockBoard = false;
+  timerEl.textContent = '۰';
+  movesEl.textContent = '۰';
+  
+  const level = LEVELS[currentLevel];
+  levelInfoEl.textContent = `سطح ${toPersian(currentLevel + 1)} — ${toPersian(level.pairs)} جفت`;
+  
+  const selected = EMOJIS.slice(0, level.pairs);
+  cards = [...selected, ...selected];
+  shuffle(cards);
+  
+  boardEl.style.gridTemplateColumns = `repeat(${level.cols}, 1fr)`;
+  boardEl.innerHTML = '';
+  
+  cards.forEach((emoji, index) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.emoji = emoji;
+    card.dataset.index = index;
+    card.innerHTML = `
+      <div class="card-face card-back"></div>
+      <div class="card-face card-front">${emoji}</div>
+    `;
+    card.addEventListener('click', () => flipCard(card));
+    boardEl.appendChild(card);
+  });
+  
+  pairsEl.textContent = `۰/${toPersian(level.pairs)}`;
+  startTimer();
+}
+
+// ===== تایمر =====
+function startTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    seconds++;
+    timerEl.textContent = toPersian(seconds);
+  }, 1000);
+}
+
+// ===== برگرداندن کارت =====
+function flipCard(card) {
+  if (lockBoard) return;
+  if (card.classList.contains('flipped')) return;
+  if (card.classList.contains('matched')) return;
+  
+  card.classList.add('flipped');
+  flipped.push(card);
+  
+  if (flipped.length === 2) {
+    moves++;
+    movesEl.textContent = toPersian(moves);
+    checkMatch();
+  }
+}
+
+// ===== بررسی جفت =====
+function checkMatch() {
+  const [a, b] = flipped;
+  const isMatch = a.dataset.emoji === b.dataset.emoji;
+  
+  if (isMatch) {
+    a.classList.add('matched');
+    b.classList.add('matched');
+    matched++;
+    const level = LEVELS[currentLevel];
+    pairsEl.textContent = `${toPersian(matched)}/${toPersian(level.pairs)}`;
+    flipped = [];
+    
+    if (matched === level.pairs) {
+      setTimeout(win, 600);
+    }
+  } else {
+    lockBoard = true;
+    setTimeout(() => {
+      a.classList.remove('flipped');
+      b.classList.remove('flipped');
+      flipped = [];
+      lockBoard = false;
+    }, 900);
+  }
+}
+
+// ===== برد =====
+function win() {
+  clearInterval(timerInterval);
+  finalMovesEl.textContent = toPersian(moves);
+  finalTimeEl.textContent = toPersian(seconds);
+  winOverlay.classList.add('show');
+}
+
+// ===== سطح بعدی =====
+function nextLevel() {
+  winOverlay.classList.remove('show');
+  if (currentLevel < LEVELS.length - 1) {
+    currentLevel++;
+  } else {
+    currentLevel = 0;
+  }
+  newGame();
+}
+
+// ===== ابزارها =====
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function toPersian(num) {
+  return String(num).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+}
+
+// ===== شروع =====
+newGame();
+</script>
+
+</body>
+</html>
